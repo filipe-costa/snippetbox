@@ -11,6 +11,7 @@ import (
 )
 
 type UserModelInterface interface {
+	Get(id int) (User, error)
 	Insert(name, email, password string) error
 	Authenticate(email, password string) (int, error)
 	Exists(id int) (bool, error)
@@ -29,6 +30,24 @@ type User struct {
 // Define a new UserModel struct which wraps a database connection pool.
 type UserModel struct {
 	DB *sql.DB
+}
+
+func (m *UserModel) Get(id int) (User, error) {
+	var user User
+
+	stmt := "SELECT id, name, email, created FROM users WHERE id = ?"
+
+	err := m.DB.QueryRow(stmt, id).Scan(&user.ID, &user.Name, &user.Email, &user.Created)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return User{}, ErrNoRecord
+		} else {
+			return User{}, err
+		}
+	}
+
+	return user, nil
 }
 
 // We'll use the Insert method to add a new record to the "users" table.
